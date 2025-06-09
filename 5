@@ -1,0 +1,191 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
+#include <sstream>
+#include <sys/stat.h>
+#include <locale>
+#include <codecvt>
+
+using namespace std;
+
+
+class Hero {
+public:
+    string name;       
+    string role;      
+    int starting_gold; 
+    string main_attribute; 
+    string difficulty;  
+};
+
+// Функция для ввода нового героя
+Hero inputHero() {
+    Hero h;
+    cout << "Введите имя героя: ";
+    cin >> h.name;
+    cout << "Введите роль героя: ";
+    cin >> h.role;
+    cout << "Введите начальное золото: ";
+    cin >> h.starting_gold;
+    cout << "Введите главный атрибут: ";
+    cin >> h.main_attribute;
+    cout << "Введите сложность освоения: ";
+    cin >> h.difficulty;
+    return h;
+}
+
+// Функция для проверки существования файла
+bool fileExists(const string& filename) {
+    struct stat buffer;
+    return (stat(filename.c_str(), &buffer) == 0);
+}
+
+// Функция для сохранения массива героев в файл
+void saveToFile(const vector<Hero>& heroes, const string& filename) {
+    
+    ofstream outFile(filename);
+    if (!outFile) {
+        cerr << "Ошибка открытия файла для записи! Возможные причины:" << endl;
+        cerr << "1. Неправильный путь к файлу." << endl;
+        cerr << "2. Нет прав на запись в указанную директорию." << endl;
+        cerr << "3. Файл уже открыт в другой программе." << endl;
+        return;
+    }
+
+   
+    outFile.imbue(locale(outFile.getloc(), new codecvt_utf8<wchar_t>));
+
+    for (const auto& h : heroes) {
+        outFile << h.name << " " << h.role << " " << h.starting_gold << " "
+                << h.main_attribute << " " << h.difficulty << endl;
+    }
+
+    outFile.close();
+    cout << "Данные успешно сохранены в файл." << endl;
+}
+
+// Функция для чтения героев из файла
+vector<Hero> readFromFile(const string& filename) {
+    vector<Hero> heroes;
+    if (!fileExists(filename)) {
+        cerr << "Файл не существует. Будет создан новый файл при сохранении." << endl;
+        return heroes;
+    }
+
+    ifstream inFile(filename);
+    if (!inFile) {
+        cerr << "Ошибка открытия файла для чтения!" << endl;
+        return heroes;
+    }
+
+  
+    inFile.imbue(locale(inFile.getloc(), new codecvt_utf8<wchar_t>));
+
+    string line;
+    while (getline(inFile, line)) {
+        istringstream iss(line);
+        Hero h;
+        if (iss >> h.name >> h.role >> h.starting_gold >> h.main_attribute >> h.difficulty) {
+            heroes.push_back(h);
+        }
+    }
+
+    inFile.close();
+    return heroes;
+}
+
+
+void updateHero(vector<Hero>& heroes, int index) {
+    if (index < 0 || index >= heroes.size()) {
+        cout << "Неверный индекс!" << endl;
+        return;
+    }
+
+    cout << "Редактирование героя #" << index << endl;
+    Hero h = inputHero();
+    heroes[index] = h;
+    cout << "Герой успешно обновлен." << endl;
+}
+
+// Функция для удаления героя
+void deleteHero(vector<Hero>& heroes, int index) {
+    if (index < 0 || index >= heroes.size()) {
+        cout << "Неверный индекс!" << endl;
+        return;
+    }
+
+    heroes.erase(heroes.begin() + index);
+    cout << "Герой успешно удален." << endl;
+}
+
+// Функция для вывода всех героев
+void printHeroes(const vector<Hero>& heroes) {
+    cout << "\nСписок героев:" << endl;
+    cout << "----------------------------------------" << endl;
+    for (size_t i = 0; i < heroes.size(); ++i) {
+        const auto& h = heroes[i];
+        cout << "#" << i << ": " << h.name << ", роль: " << h.role
+             << ", начальное золото: " << h.starting_gold << ", атрибут: " << h.main_attribute
+             << ", сложность: " << h.difficulty << endl;
+    }
+    cout << "----------------------------------------\n" << endl;
+}
+
+int main() {
+    vector<Hero> heroes;
+    string filename = "C:\\Users\\gxth\\OneDrive\\Desktop\\heroes.txt"; // Укажите ваше имя пользователя
+
+    // Загрузка данных из файла при старте
+    heroes = readFromFile(filename);
+
+    while (true) {
+        cout << "Меню:" << endl;
+        cout << "1. Добавить героя" << endl;
+        cout << "2. Просмотреть всех героев" << endl;
+        cout << "3. Обновить героя" << endl;
+        cout << "4. Удалить героя" << endl;
+        cout << "5. Сохранить в файл" << endl;
+        cout << "6. Выйти" << endl;
+
+        int choice;
+        cout << "Выберите действие: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1: {
+                Hero h = inputHero();
+                heroes.push_back(h);
+                cout << "Герой добавлен." << endl;
+                break;
+            }
+            case 2:
+                printHeroes(heroes);
+                break;
+            case 3: {
+                int index;
+                cout << "Введите индекс героя для обновления: ";
+                cin >> index;
+                updateHero(heroes, index);
+                break;
+            }
+            case 4: {
+                int index;
+                cout << "Введите индекс героя для удаления: ";
+                cin >> index;
+                deleteHero(heroes, index);
+                break;
+            }
+            case 5:
+                saveToFile(heroes, filename);
+                break;
+            case 6:
+                saveToFile(heroes, filename); // Автосохранение при выходе
+                return 0;
+            default:
+                cout << "Неверный выбор!" << endl;
+        }
+    }
+
+    return 0;
+}
